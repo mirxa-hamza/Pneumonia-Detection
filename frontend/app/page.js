@@ -215,7 +215,7 @@ export default function PneumoniaScanner() {
                   <div className="p-6 md:p-8 flex flex-col flex-1 min-h-0">
                     {!selectedFile ? (
                       <div
-                        className={`relative border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center flex-1 min-h-[260px] transition-all duration-300 ${
+                        className={`relative border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center flex-1 min-h-[260px] max-h-[420px] transition-all duration-300 ${
                           isDragging ? 'border-blue-500 bg-blue-50 scale-[1.01]' : 'border-slate-300 hover:border-blue-400 bg-slate-50 hover:bg-slate-50/80'
                         }`}
                         onDragOver={onDragOver}
@@ -242,11 +242,11 @@ export default function PneumoniaScanner() {
                         </button>
                       </div>
                     ) : (
-                      <div className="relative flex-1 min-h-[260px] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center">
+                      <div className="relative flex-1 min-h-[260px] max-h-[420px] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center">
                         <img
                           src={previewUrl}
                           alt="X-Ray Preview"
-                          className={`max-h-full w-auto max-w-full object-contain ${isScanning ? 'opacity-80 scale-105 filter grayscale contrast-125' : ''} transition-all duration-700`}
+                          className={`h-full w-full object-contain ${isScanning ? 'opacity-80 scale-105 filter grayscale contrast-125' : ''} transition-all duration-700`}
                         />
 
                         {/* Scanning Pulse Animation Overlay */}
