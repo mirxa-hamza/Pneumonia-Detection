@@ -170,7 +170,7 @@ export default function PneumoniaScanner() {
           <div aria-hidden="true" className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-gradient-to-br from-blue-300 to-cyan-200 opacity-30 blur-3xl animate-float" />
           <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-gradient-to-br from-cyan-300 to-blue-200 opacity-25 blur-3xl animate-float" style={{ animationDelay: '1.2s' }} />
 
-          <div className="relative max-w-7xl mx-auto w-full flex flex-col flex-1 gap-10 md:gap-14">
+          <div className="relative max-w-7xl mx-auto w-full flex flex-col flex-1 gap-6 md:gap-8">
             {/* Hero */}
             <div className="text-center max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fade-up">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold tracking-wider uppercase border border-blue-100">
