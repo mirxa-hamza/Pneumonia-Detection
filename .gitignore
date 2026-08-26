@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+artifacts/
+!artifacts/.gitkeep
+*.pt
+*.pth
+.ipynb_checkpoints/
+frontend/node_modules/
+frontend/.next/
+chest_xray/
+frontend/node_modules
