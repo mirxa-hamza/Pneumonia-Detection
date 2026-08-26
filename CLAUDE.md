@@ -174,6 +174,22 @@ accordingly. If you add more lucide icons later, check
 `node_modules/lucide-react/dist/lucide-react.d.ts` for `declare const <Name>:` before
 assuming an icon name from older lucide-react docs/examples still exists.
 
+**Design pass (2026-08-26):** `page.js` was restructured so the header, hero, and scanner
+workspace fit within one viewport (`minHeight: '100dvh'` on the first `<section>`); "How it
+Works" and the footer sit below it, reached by scrolling. The two workspace cards
+(Analysis Workspace / Diagnostic Report) use `items-stretch` on their grid parent plus
+`h-full flex flex-col flex-1` on both card wrappers so they always match height instead of
+sizing independently to content. Entrance/hover animations are implemented as plain CSS
+(`@keyframes` + classes `.animate-fade-up`, `.animate-fade-up-delay`, `.animate-float`,
+`.result-enter` in `globals.css`, respecting `prefers-reduced-motion`) rather than the
+`animate-in`/`fade-in`/`slide-in-from-*` utility classes the original backup code used —
+those come from the `tailwindcss-animate` plugin, which was never installed, so they were
+silently doing nothing. The header's unlabeled icon-only link button was removed; GitHub
+is now a single, clearly labeled link (header "GitHub" pill + footer "GitHub Repository"
+button) pointing at `https://github.com/mirxa-hamza`. `app/icon.svg` was added (a blue
+rounded-square version of the header's Activity glyph) so Next.js's file-based favicon
+convention picks it up automatically — no `metadata.icons` changes were needed.
+
 ## Setup / run commands (Windows, from README.md and commands.txt)
 
 ```powershell
