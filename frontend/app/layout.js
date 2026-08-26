@@ -1,14 +1,21 @@
+import { Poppins } from 'next/font/google';
 import "./globals.css";
 
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins'
+});
+
 export const metadata = {
-  title: "PneumoScan | X-ray screening",
-  description: "Local pneumonia X-ray classification demo"
+  title: "PneumoScan AI | X-ray screening",
+  description: "Advanced Pneumonia Detection AI"
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${poppins.variable} font-sans`}>
+      <body className="bg-slate-50 text-slate-900 min-h-screen font-sans antialiased">{children}</body>
     </html>
   );
 }
