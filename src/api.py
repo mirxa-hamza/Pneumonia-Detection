@@ -19,9 +19,13 @@ MODEL = None
 MODEL_INFO = None
 
 app = FastAPI(title="Pneumonia X-ray Classifier API", version="1.0.0")
+# This API has no auth/cookies (allow_credentials=False), so allowing any origin is safe
+# and avoids having to keep an allowlist in sync with Vercel's production + preview
+# deployment URLs. Set ALLOWED_ORIGINS (comma-separated) to restrict this if you'd rather.
+_allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"] if _allowed_origins == "*" else [o.strip() for o in _allowed_origins.split(",")],
     allow_credentials=False,
     allow_methods=["POST", "GET"],
     allow_headers=["*"],

@@ -1,0 +1,12 @@
+chest_xray/
+frontend/
+notebooks/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.next/
+node_modules/
+pneumonia-project-source.zip
+artifacts/*.png
+artifacts/*.json

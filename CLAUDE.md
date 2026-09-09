@@ -238,6 +238,22 @@ present in the repo despite being planned:
   clinical scope, single vs. multi-class pneumonia, local GPU vs. Kaggle, precision vs.
   recall preference — don't appear to have recorded answers anywhere in the repo.
 
+## Deployment (added 2026-08-26)
+
+The project moved from "local only" (per `plan.md`/`README.md`) to actually being
+deployed. See `DEPLOY.md` for the full walkthrough. Summary: the FastAPI backend
+(`src/api.py`) goes to **Hugging Face Spaces** (Docker SDK) via the root-level
+`Dockerfile`/`.dockerignore`, and the Next.js frontend goes to **Vercel**, wired together
+by the `NEXT_PUBLIC_API_URL` env var the frontend already reads. Vercel was ruled out for
+the backend itself — its Python functions currently cap at 500MB (5GB only via a beta
+that needs Fluid Compute) and its own docs don't recommend it for ML models like this one.
+
+`src/api.py`'s CORS was changed from a hardcoded `localhost:3000`/`127.0.0.1:3000`
+allowlist to `allow_origins=["*"]` (safe here since `allow_credentials=False`, no
+auth/cookies involved), overridable via an `ALLOWED_ORIGINS` env var — this was needed so
+the deployed Vercel frontend (and its per-PR preview URLs) can call the deployed API
+without maintaining a domain allowlist by hand.
+
 ## Conventions / things to preserve when editing
 
 - Label convention is fixed: index 0 = `NORMAL`, index 1 = `PNEUMONIA` (`CLASS_NAMES` in
