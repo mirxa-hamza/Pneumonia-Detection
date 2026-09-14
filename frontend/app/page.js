@@ -13,8 +13,7 @@ import {
   Cpu,
   BrainCircuit,
   AlertTriangle,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -58,10 +57,15 @@ export default function PneumoniaScanner() {
   };
 
   const handleFileSelection = (file) => {
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload a valid image file (JPEG, PNG).');
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setError('Please upload a JPG, JPEG, or PNG chest X-ray image.');
       return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('The selected image is larger than the 10 MB limit.');
+      return;
+    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setError(null);
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
@@ -69,6 +73,7 @@ export default function PneumoniaScanner() {
   };
 
   const resetWorkspace = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(null);
     setPreviewUrl(null);
     setResult(null);
@@ -93,41 +98,32 @@ export default function PneumoniaScanner() {
         body: formData,
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error('API request failed. Please check your backend connection.');
+        throw new Error(data.detail || 'The prediction service could not analyze this image.');
       }
 
-      const data = await response.json();
-
-      // src/api.py returns: { prediction, label, confidence, normal_probability,
-      // pneumonia_probability, threshold } where confidence/probabilities are
-      // ALREADY percentages (0-100), not fractions — do not multiply by 100 again.
-      const label = data.label || data.prediction || data.class || 'Unknown';
-      const confidence = data.confidence !== undefined
-        ? parseFloat(data.confidence)
-        : (data.probability !== undefined ? parseFloat(data.probability) * 100 : 92.5); // Fallback to 92.5 for demo
+      const isPneumonia = data.prediction === 'pneumonia_positive';
+      const confidence = Number(data.confidence);
+      if (!Number.isFinite(confidence)) {
+        throw new Error('The prediction service returned an invalid confidence score.');
+      }
 
       setResult({
-        label: label.toLowerCase().includes('pneumonia') ? 'Pneumonia Positive' : 'Normal / Pneumonia Negative',
-        confidence: isNaN(confidence) ? 95.0 : confidence,
+        label: isPneumonia ? 'Pneumonia Positive' : 'Normal / Pneumonia Negative',
+        confidence,
+        normalProbability: Number(data.normal_probability),
+        pneumoniaProbability: Number(data.pneumonia_probability),
+        threshold: Number(data.threshold),
       });
 
     } catch (err) {
       console.error("Backend Error:", err);
-      // Fallback Mock Data for UI testing if backend fails
-      setTimeout(() => {
-        const isPneumonia = Math.random() > 0.5;
-        setResult({
-          label: isPneumonia ? 'Pneumonia Positive' : 'Normal / Pneumonia Negative',
-          confidence: (Math.random() * 15 + 85).toFixed(1), // 85% - 100%
-        });
-        setError('Backend API unreachable. Showing mock results for UI demonstration.');
-        setIsScanning(false);
-      }, 2000);
-      return; // return early to prevent the second setIsScanning(false)
+      setResult(null);
+      setError(`${err.message} Start the local project with run_project.cmd, then try again.`);
+    } finally {
+      setIsScanning(false);
     }
-
-    setIsScanning(false);
   };
 
   return (
@@ -174,7 +170,7 @@ export default function PneumoniaScanner() {
             {/* Hero */}
             <div className="text-center max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fade-up">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold tracking-wider uppercase border border-blue-100">
-                <Stethoscope size={14} /> Clinical Grade Diagnostic Assistant
+                <Stethoscope size={14} /> Educational Local Model
               </div>
               <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight">
                 Advanced <span className="text-blue-600 relative">
@@ -185,7 +181,7 @@ export default function PneumoniaScanner() {
                 </span> AI
               </h1>
               <p className="text-base md:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
-                Upload medical chest X-ray scans for instant, AI-powered radiographic analysis. Designed to assist radiologists with secondary screening.
+                Upload a chest X-ray to run the trained classification model. The result is for education and demonstration only.
               </p>
             </div>
 
@@ -214,7 +210,9 @@ export default function PneumoniaScanner() {
 
                   <div className="p-6 md:p-8 flex flex-col flex-1 min-h-0">
                     {!selectedFile ? (
-                      <div
+                      <button
+                        type="button"
+                        aria-label="Choose a chest X-ray image"
                         className={`relative border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center flex-1 min-h-[260px] max-h-[420px] transition-all duration-300 ${
                           isDragging ? 'border-blue-500 bg-blue-50 scale-[1.01]' : 'border-slate-300 hover:border-blue-400 bg-slate-50 hover:bg-slate-50/80'
                         }`}
@@ -237,10 +235,10 @@ export default function PneumoniaScanner() {
                         <p className="text-slate-500 text-sm max-w-xs mb-6">
                           Supported formats: JPG, PNG (max 10MB)
                         </p>
-                        <button className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all hover:-translate-y-0.5">
+                        <span className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all hover:-translate-y-0.5">
                           Browse Files
-                        </button>
-                      </div>
+                        </span>
+                      </button>
                     ) : (
                       <div className="relative flex-1 min-h-[260px] max-h-[420px] bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center">
                         <img
@@ -296,7 +294,7 @@ export default function PneumoniaScanner() {
                 </div>
 
                 {error && (
-                  <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg flex items-start gap-3 shrink-0 result-enter">
+                  <div role="alert" aria-live="assertive" className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg flex items-start gap-3 shrink-0 result-enter">
                     <AlertTriangle className="shrink-0 mt-0.5" size={18} />
                     <p className="text-sm font-medium">{error}</p>
                   </div>
@@ -324,7 +322,7 @@ export default function PneumoniaScanner() {
                     )}
 
                     {isScanning && (
-                      <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
+                      <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6" role="status" aria-live="polite" aria-busy="true">
                         <div className="relative w-16 h-16 flex items-center justify-center">
                           <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
                           <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
@@ -368,25 +366,22 @@ export default function PneumoniaScanner() {
                         </div>
 
                         {/* Secondary Analysis Details */}
-                        <div className="mt-6 space-y-3">
-                          <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Analysis Details</h5>
+                          <div className="mt-6 space-y-3">
+                            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Analysis Details</h5>
 
                           <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                            <span className="text-sm font-medium text-slate-700">Lung Opacity</span>
-                            {result.label === 'Pneumonia Positive' ? (
-                              <AlertCircle size={18} className="text-rose-500" />
-                            ) : (
-                              <CheckCircle2 size={18} className="text-emerald-500" />
-                            )}
+                            <span className="text-sm font-medium text-slate-700">Normal probability</span>
+                            <span className="text-sm font-bold text-slate-800">{result.normalProbability.toFixed(1)}%</span>
                           </div>
 
                           <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                            <span className="text-sm font-medium text-slate-700">Consolidation</span>
-                            {result.label === 'Pneumonia Positive' ? (
-                              <AlertCircle size={18} className="text-rose-500" />
-                            ) : (
-                              <CheckCircle2 size={18} className="text-emerald-500" />
-                            )}
+                            <span className="text-sm font-medium text-slate-700">Pneumonia probability</span>
+                            <span className="text-sm font-bold text-slate-800">{result.pneumoniaProbability.toFixed(1)}%</span>
+                          </div>
+
+                          <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <span className="text-sm font-medium text-slate-700">Decision threshold</span>
+                            <span className="text-sm font-bold text-slate-800">{result.threshold.toFixed(0)}%</span>
                           </div>
                         </div>
                       </div>
@@ -402,7 +397,7 @@ export default function PneumoniaScanner() {
         <section id="how-it-works" className="max-w-7xl mx-auto px-4 md:px-10 pt-24 pb-16 border-t border-slate-200">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">How It Works</h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">Our deep learning pipeline processes X-rays locally, providing immediate, secure diagnostic assistance without compromising patient privacy.</p>
+            <p className="text-slate-600 max-w-2xl mx-auto">The project validates an uploaded image, runs the trained model, and returns the model probabilities with a fixed decision threshold.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -411,7 +406,7 @@ export default function PneumoniaScanner() {
                 <span className="font-bold text-lg">1</span>
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-3">Image Ingestion</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">Client-side preprocessing of JPEG/PNG data prepares the scan for the neural network, ensuring optimal resolution and contrast.</p>
+              <p className="text-slate-600 text-sm leading-relaxed">The application accepts JPG, JPEG, and PNG images under 10 MB, then uses the trained model preprocessing consistently.</p>
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
@@ -419,7 +414,7 @@ export default function PneumoniaScanner() {
                 <span className="font-bold text-lg">2</span>
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-3">Neural Inference</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">The scan is fed into our customized ResNet/CNN backend model which extracts multi-layered features to detect lung abnormalities.</p>
+              <p className="text-slate-600 text-sm leading-relaxed">The EfficientNet B0 model estimates the probability of the two trained labels: normal and pneumonia positive.</p>
             </div>
 
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
@@ -427,7 +422,7 @@ export default function PneumoniaScanner() {
                 <span className="font-bold text-lg">3</span>
               </div>
               <h3 className="text-lg font-bold text-slate-800 mb-3">Output Generation</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">Probability mapping generates a localized classification score, instantly indicating the presence or absence of Pneumonia.</p>
+              <p className="text-slate-600 text-sm leading-relaxed">The interface presents the prediction, confidence, and both class probabilities without inventing additional medical findings.</p>
             </div>
           </div>
 

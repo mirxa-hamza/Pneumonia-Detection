@@ -1,0 +1,8 @@
+{
+  "name": "pneumonia-xray-classifier",
+  "private": true,
+  "scripts": {
+    "dev": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./run_project.ps1",
+    "start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./run_project.ps1"
+  }
+}

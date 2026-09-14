@@ -1,11 +1,9 @@
 # Deploying this project
 
-Vercel is a great fit for the Next.js frontend, but not for the FastAPI + PyTorch
-backend — Vercel's Python functions currently cap at a 500MB bundle (5GB only in a beta
-that needs Fluid Compute + Active CPU pricing) and Vercel's own docs frame that as
-edge-case territory for ML models, not a recommended pattern. So this splits the backend
-and frontend across two services, which is also what `plan.md` originally intended
-("public web demo will be hosted separately, preferably Hugging Face Spaces"):
+Vercel is a good fit for the Next.js frontend. Host the FastAPI + PyTorch model as a
+separate service: Vercel functions have a 500 MB uncompressed Python bundle limit and a
+4.5 MB request/response limit, so putting PyTorch and model weights in a normal Vercel
+function is fragile. This project is prepared for this split:
 
 - **Backend** (`src/api.py`, PyTorch model) → **Hugging Face Spaces** (Docker SDK, free tier)
 - **Frontend** (`frontend/`, Next.js) → **Vercel**
@@ -22,7 +20,7 @@ and frontend across two services, which is also what `plan.md` originally intend
 3. Once the Space is created, open its **Files** tab and upload these files/folders
    (drag-and-drop works, no git required):
    - `Dockerfile` (provided — see below)
-   - `requirements.txt` (already in your project root)
+   - `requirements-api.txt`
    - the whole `src/` folder (all 6 files)
    - `artifacts/best_model.pt` (create an `artifacts` folder in the Space and upload the
      checkpoint into it — this is the one place the model weights need to leave your
@@ -39,13 +37,15 @@ for a free demo.
 
 ### CORS
 
-`src/api.py` was updated to allow requests from any origin (`allow_origins=["*"]`) since
-this API has no authentication/cookies (`allow_credentials=False`) — that's safe here and
-means you don't have to keep an allowlist in sync with Vercel's production and preview
-URLs. If you'd rather restrict it, set an `ALLOWED_ORIGINS` environment variable on the
-Space (comma-separated list of exact origins, e.g.
-`https://your-app.vercel.app,http://localhost:3000`) under the Space's **Settings →
-Variables**.
+The API permits only local frontend URLs by default. After Vercel gives you the production
+URL, set `ALLOWED_ORIGINS` in the Space's **Settings → Variables** to a comma-separated
+allowlist, for example:
+
+```text
+https://your-app.vercel.app,http://localhost:3000
+```
+
+Add preview URLs too if you want Vercel preview deployments to call the live API.
 
 ## 2. Frontend → Vercel
 
@@ -90,8 +90,8 @@ Open your Vercel URL, upload a test X-ray, and click Analyze. If it fails, check
 
 ## Worth knowing before this goes public
 
-Per `CLAUDE.md`, the decision threshold (0.95) baked into `artifacts/best_model.pt` was
-selected by sweeping over the locked test set rather than validation data — the reported
-92.3%/90.5% test metrics aren't a fully clean held-out evaluation. Not a blocker for a
-portfolio/demo deployment, but worth being upfront about (and the app already carries a
-clear "not a diagnosis" disclaimer, which should stay regardless of where it's hosted).
+The existing checkpoint's 0.95 decision threshold was selected after inspecting the
+locked test set, so its reported 92.3% accuracy / 90.5% precision is not a clean final
+evaluation. The updated training script now selects thresholds from the validation split
+only. Retrain on Kaggle and evaluate the locked test partition once before presenting
+metrics publicly. The app is an educational demonstration, not a diagnostic device.

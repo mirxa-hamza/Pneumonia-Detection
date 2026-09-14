@@ -30,7 +30,9 @@ def set_seed(seed: int) -> None:
 
 
 def choose_threshold(labels: np.ndarray, probabilities: np.ndarray, minimum_precision: float = 0.90) -> float:
-    candidates = np.arange(0.10, 0.91, 0.01)
+    # Select the operating point only from validation predictions.  This also
+    # permits high-confidence thresholds such as 0.95 without looking at test data.
+    candidates = np.arange(0.01, 1.00, 0.01)
     scored = []
     for threshold in candidates:
         predictions = (probabilities >= threshold).astype(int)
@@ -149,6 +151,7 @@ def main() -> None:
                 "class_names": CLASS_NAMES,
                 "image_size": IMAGE_SIZE,
                 "threshold": threshold,
+                "threshold_origin": "validation_split",
                 "validation_metrics": validation_metrics,
             }
             torch.save(checkpoint, output_dir / "best_model.pt")

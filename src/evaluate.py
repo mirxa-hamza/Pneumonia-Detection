@@ -36,6 +36,7 @@ def main() -> None:
     predictions = (probabilities >= threshold).astype(int)
     result = metrics(labels, probabilities, threshold)
     result["threshold"] = threshold
+    result["threshold_origin"] = checkpoint.get("threshold_origin", "unknown")
     result["classification_report"] = classification_report(labels, predictions, target_names=CLASS_NAMES, output_dict=True, zero_division=0)
     result["invalid_test_files"] = invalid_files
 
